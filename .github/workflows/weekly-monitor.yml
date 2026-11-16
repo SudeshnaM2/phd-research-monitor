@@ -1,0 +1,50 @@
+
+name: Weekly PhD research monitor
+
+on:
+  schedule:
+    # Every Monday at 09:00 UTC
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  research-monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run research monitor
+        run: |
+          python monitor.py
+
+      - name: Upload research digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-research-digest
+          path: weekly_digest.md
+          if-no-files-found: error
+
+      - name: Publish digest as GitHub Issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "Weekly PhD Research Digest - $(date -u +%Y-%m-%d)" \
+            --body-file weekly_digest.md
