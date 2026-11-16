@@ -3,7 +3,6 @@ name: Weekly PhD research monitor
 
 on:
   schedule:
-    # Every Monday at 09:00 UTC
     - cron: "0 9 * * 1"
   workflow_dispatch:
 
@@ -31,20 +30,27 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run research monitor
-        run: |
-          python monitor.py
+        run: python monitor.py
 
       - name: Upload research digest
         uses: actions/upload-artifact@v4
         with:
           name: weekly-research-digest
-          path: weekly_digest.md
+          path: reports/digest-*.md
           if-no-files-found: error
 
       - name: Publish digest as GitHub Issue
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          REPORT=$(find reports -name 'digest-*.md' \
+            -type f | sort | tail -n 1)
+
+          if [ -z "$REPORT" ]; then
+            echo "No report found"
+            exit 1
+          fi
+
           gh issue create \
             --title "Weekly PhD Research Digest - $(date -u +%Y-%m-%d)" \
-            --body-file weekly_digest.md
+            --body-file "$REPORT"
