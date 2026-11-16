@@ -1,0 +1,18 @@
+{
+  "lookback_days": 8,
+  "max_results_per_topic": 12,
+  "topics": {
+    "Digital therapeutics and engagement": "(digital therapeutics OR mental health app) AND (engagement OR adherence OR retention)",
+    "Eating disorder recovery": "(eating disorder OR anorexia OR bulimia) AND (recovery OR relapse OR digital intervention)",
+    "Substance use recovery": "(substance use disorder OR addiction) AND (recovery OR relapse OR mobile health)",
+    "Engagement trajectories": "(engagement trajectories OR usage patterns) AND (digital health OR mental health)",
+    "Causal inference": "(target trial emulation OR causal inference OR marginal structural model) AND (digital health OR mental health)",
+    "Adaptive interventions": "(just-in-time adaptive intervention OR personalised digital intervention) AND (mental health OR recovery)"
+  },
+  "conferences": [
+    {"name": "International Conference on Eating Disorders (AED)", "url": "https://www.aedweb.org/"},
+    {"name": "Society for Research on Nicotine and Tobacco", "url": "https://www.srnt.org/"},
+    {"name": "AMIA Annual Symposium", "url": "https://amia.org/education-events/amia-annual-symposium"},
+    {"name": "International Society for Research on Internet Interventions", "url": "https://isrii.org/"}
+  ]
+}
