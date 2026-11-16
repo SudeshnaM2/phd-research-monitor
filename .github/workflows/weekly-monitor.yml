@@ -3,36 +3,45 @@ name: Weekly PhD research monitor
 
 on:
   schedule:
-    - cron: "0 9 * * 1"
+    - cron: '0 9 * * 1'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   issues: write
+
+concurrency:
+  group: weekly-phd-monitor
+  cancel-in-progress: false
 
 jobs:
   research-monitor:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
+
+      - name: Import PMIDs from previous digest Issues
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python bootstrap_history.py
 
       - name: Run research monitor
         run: python monitor.py
 
-      - name: Upload research digest
+      - name: Upload digest
         uses: actions/upload-artifact@v4
         with:
           name: weekly-research-digest
@@ -42,15 +51,42 @@ jobs:
       - name: Publish digest as GitHub Issue
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
         run: |
+          set -euo pipefail
+
           REPORT=$(find reports -name 'digest-*.md' \
             -type f | sort | tail -n 1)
 
-          if [ -z "$REPORT" ]; then
-            echo "No report found"
-            exit 1
+          TITLE="Weekly PhD Research Digest - $(date -u +%Y-%m-%d)"
+
+          EXISTING=$(gh issue list --state all \
+            --search "in:title \"$TITLE\"" \
+            --json title,number \
+            --jq ".[] | select(.title == \"$TITLE\") | .number" \
+            | head -n 1)
+
+          if [ -n "$EXISTING" ]; then
+            gh issue edit "$EXISTING" --body-file "$REPORT"
+          else
+            gh issue create \
+              --title "$TITLE" \
+              --body-file "$REPORT"
           fi
 
-          gh issue create \
-            --title "Weekly PhD Research Digest - $(date -u +%Y-%m-%d)" \
-            --body-file "$REPORT"
+      - name: Save previously reported paper IDs
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mv pending_seen_papers.json seen_papers.json
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add seen_papers.json
+
+          if ! git diff --cached --quiet; then
+            git commit -m "Update seen PubMed IDs after weekly digest"
+            git push
+          fi
